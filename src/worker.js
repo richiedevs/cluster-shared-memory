@@ -2,225 +2,225 @@ const cluster = require('cluster');
 const { v4: uuid4 } = require('uuid');
 
 class Worker {
-  constructor() {
-    /**
-     * Record the callback functions of requests.
-     * @private
-     */
-    this.__getCallbacks__ = {};
+	constructor() {
+		/**
+		 * Record the callback functions of requests.
+		 * @private
+		 */
+		this.__getCallbacks__ = {};
 
-    /**
-     * Record the listeners' callback functions.
-     * @private
-     */
-    this.__getListenerCallbacks__ = {};
+		/**
+		 * Record the listeners' callback functions.
+		 * @private
+		 */
+		this.__getListenerCallbacks__ = {};
 
-    // Listen the returned messages from master processes.
-    process.on('message', (data) => {
-      // Mark this is a share memory.
-      if (!data.isSharedMemoryMessage) return;
-      if (data.isNotified) {
-        const callback = this.__getListenerCallbacks__[data.uuid];
-        if (callback && typeof callback === 'function') {
-          callback(data.value);
-        }
-      } else {
-        const callback = this.__getCallbacks__[data.uuid];
-        if (callback && typeof callback === 'function') {
-          callback(data.value);
-        }
-        delete this.__getCallbacks__[data.uuid];
-      }
-    });
-  }
+		// Listen the returned messages from master processes.
+		process.on('message', data => {
+			// Mark this is a share memory.
+			if (!data.isSharedMemoryMessage) return;
+			if (data.isNotified) {
+				const callback = this.__getListenerCallbacks__[data.uuid];
+				if (callback && typeof callback === 'function') {
+					callback(data.value);
+				}
+			} else {
+				const cb = this.__getCallbacks__[data.uuid];
+				if (cb && typeof cb === 'function') {
+					cb(data.value);
+				}
+				delete this.__getCallbacks__[data.uuid];
+			}
+		});
+	}
 
-  /**
-   * Write data.
-   * @param {object} key
-   * @param {*} value
-   * @param {function?} callback
-   */
-  set(key, value, callback) {
-    if (typeof callback === 'function') {
-      this.handle('set', key, value, callback);
-    }
-    return new Promise((resolve) => {
-      this.handle('set', key, value, () => {
-        resolve();
-      });
-    });
-  }
+	/**
+	 * Write data.
+	 * @param {object} k
+	 * @param {*} v
+	 * @param {function?} cb
+	 */
+	set(k, v, cb) {
+		if (typeof cb === 'function') {
+			this.handle('set', k, v, cb);
+		}
+		return new Promise(resolve => {
+			this.handle('set', k, v, () => {
+				resolve();
+			});
+		});
+	}
 
-  /**
-   * Read data.
-   * @param {object} key
-   * @param {function?} callback
-   * @returns {*}
-   */
-  get(key, callback) {
-    if (typeof callback === 'function') {
-      this.handle('get', key, null, callback);
-    }
-    return new Promise((resolve) => {
-      this.handle('get', key, null, (value) => {
-        resolve(value);
-      });
-    });
-  }
+	/**
+	 * Read data.
+	 * @param {object} k
+	 * @param {function?} cb
+	 * @returns {*}
+	 */
+	get(k, cb) {
+		if (typeof cb === 'function') {
+			this.handle('get', k, null, cb);
+		}
+		return new Promise(resolve => {
+			this.handle('get', k, null, v => {
+				resolve(v);
+			});
+		});
+	}
 
-  /**
-   * Remove data.
-   * @param {object} key
-   * @param {function?} callback
-   */
-  remove(key, callback) {
-    if (typeof callback === 'function') {
-      this.handle('remove', key, null, callback);
-    }
-    return new Promise((resolve) => {
-      this.handle('remove', key, null, () => {
-        resolve();
-      });
-    });
-  }
+	/**
+	 * Remove data.
+	 * @param {object} k
+	 * @param {function?} cb
+	 */
+	remove(k, cb) {
+		if (typeof cb === 'function') {
+			this.handle('remove', k, null, cb);
+		}
+		return new Promise(resolve => {
+			this.handle('remove', k, null, () => {
+				resolve();
+			});
+		});
+	}
 
-  /**
-   * Get the Lock of an object.
-   * @param {object} key
-   * @param {function?} callback
-   * @returns {*}
-   */
-  getLock(key, callback) {
-    if (typeof callback === 'function') {
-      this.handle('getLock', key, null, callback);
-    }
-    return new Promise((resolve) => {
-      this.handle('getLock', key, null, (value) => {
-        resolve(value);
-      });
-    });
-  }
+	/**
+	 * Get the Lock of an object.
+	 * @param {object} k
+	 * @param {function?} cb
+	 * @returns {*}
+	 */
+	getLock(k, cb) {
+		if (typeof cb === 'function') {
+			this.handle('getLock', k, null, cb);
+		}
+		return new Promise(resolve => {
+			this.handle('getLock', k, null, v => {
+				resolve(v);
+			});
+		});
+	}
 
-  /**
-   * Release the Lock of an object.
-   * @param {object} key
-   * @param {string} lockId
-   * @param {function?} callback
-   * @returns {*}
-   */
-  releaseLock(key, lockId, callback) {
-    if (typeof callback === 'function') {
-      this.handle('releaseLock', key, lockId, callback);
-    }
-    return new Promise((resolve) => {
-      this.handle('releaseLock', key, lockId, (value) => {
-        resolve(value);
-      });
-    });
-  }
+	/**
+	 * Release the Lock of an object.
+	 * @param {object} k
+	 * @param {string} lockId
+	 * @param {function?} cb
+	 * @returns {*}
+	 */
+	releaseLock(k, lockId, cb) {
+		if (typeof cb === 'function') {
+			this.handle('releaseLock', k, lockId, cb);
+		}
+		return new Promise(resolve => {
+			this.handle('releaseLock', k, lockId, v => {
+				resolve(v);
+			});
+		});
+	}
 
-  /**
-   * Auto get and release the Lock of an object.
-   * @param {object} key
-   * @param {function?} func
-   * @returns {*}
-   */
-  mutex(key, func) {
-    return (async () => {
-      const lockId = await this.getLock(key);
-      const result = await func();
-      await this.releaseLock(key, lockId);
-      return result;
-    })();
-  }
+	/**
+	 * Auto get and release the Lock of an object.
+	 * @param {object} k
+	 * @param {function?} f
+	 * @returns {*}
+	 */
+	mutex(k, f) {
+		return (async () => {
+			const lockId = await this.getLock(k);
+			const result = await f();
+			await this.releaseLock(k, lockId);
+			return result;
+		})();
+	}
 
-  /**
-   * Send the requests to the master process.
-   * @private
-   * @param {string} [method=set|get]
-   * @param {object} key
-   * @param {*} value
-   * @param {function(data)} [callback] - the callback function
-   */
-  handle(method, key, value, callback) {
-    const uuid = uuid4(); // communication ID
-    process.send({
-      isSharedMemoryMessage: true,
-      id: cluster.worker.id,
-      method,
-      uuid,
-      key,
-      value,
-    });
-    if (method === 'listen') {
-      this.__getListenerCallbacks__[uuid] = callback;
-    } else {
-      this.__getCallbacks__[uuid] = callback;
-    }
-  }
+	/**
+	 * Send the requests to the master process.
+	 * @private
+	 * @param {string} [method=set|get]
+	 * @param {object} k
+	 * @param {*} v
+	 * @param {function(data)} [cb] - the callback function
+	 */
+	handle(method, k, v, cb) {
+		const uuid = uuid4(); // communication ID
+		process.send({
+			isSharedMemoryMessage: true,
+			id: cluster.worker.id,
+			method,
+			uuid,
+			key: k,
+			value: v,
+		});
+		if (method === 'listen') {
+			this.__getListenerCallbacks__[uuid] = cb;
+		} else {
+			this.__getCallbacks__[uuid] = cb;
+		}
+	}
 
-  /**
-   * Listen an object.
-   * @param {object} key
-   * @param {function} callback
-   * @returns {*}
-   */
-  listen(key, callback) {
-    if (typeof callback === 'function') {
-      this.handle('listen', key, null, callback);
-    } else {
-      throw new Error('a listener must have a callback.');
-    }
-  }
+	/**
+	 * Listen an object.
+	 * @param {object} k
+	 * @param {function} cb
+	 * @returns {*}
+	 */
+	listen(k, cb) {
+		if (typeof cb === 'function') {
+			this.handle('listen', k, null, cb);
+		} else {
+			throw new Error('a listener must have a callback.');
+		}
+	}
 
-  /**
-   * Read the LRU shared memory.
-   * @param {object} key
-   * @param {function?} callback
-   */
-  getLRU(key, callback) {
-    if (typeof callback === 'function') {
-      this.handle('getLRU', key, null, callback);
-    }
-    return new Promise((resolve) => {
-      this.handle('getLRU', key, null, (value) => {
-        resolve(value);
-      });
-    });
-  }
+	/**
+	 * Read the LRU shared memory.
+	 * @param {object} k
+	 * @param {function?} cb
+	 */
+	getLRU(k, cb) {
+		if (typeof cb === 'function') {
+			this.handle('getLRU', k, null, cb);
+		}
+		return new Promise(resolve => {
+			this.handle('getLRU', k, null, (value) => {
+				resolve(value);
+			});
+		});
+	}
 
-  /**
-   * Write the LRU shared memory.
-   * @param {object} key
-   * @param {*} value
-   * @param {function?} callback
-   */
-  setLRU(key, value, callback) {
-    if (typeof callback === 'function') {
-      this.handle('setLRU', key, value, callback);
-    }
-    return new Promise((resolve) => {
-      this.handle('setLRU', key, value, () => {
-        resolve();
-      });
-    });
-  }
+	/**
+	 * Write the LRU shared memory.
+	 * @param {object} k
+	 * @param {*} v
+	 * @param {function?} cb
+	 */
+	setLRU(k, v, cb) {
+		if (typeof cb === 'function') {
+			this.handle('setLRU', k, v, cb);
+		}
+		return new Promise(resolve => {
+			this.handle('setLRU', k, v, () => {
+				resolve();
+			});
+		});
+	}
 
-  /**
-   * Remove an object from the LRU shared memory.
-   * @param {object} key
-   * @param {function?} callback
-   */
-  removeLRU(key, callback) {
-    if (typeof callback === 'function') {
-      this.handle('removeLRU', key, null, callback);
-    }
-    return new Promise((resolve) => {
-      this.handle('removeLRU', key, null, () => {
-        resolve();
-      });
-    });
-  }
+	/**
+	 * Remove an object from the LRU shared memory.
+	 * @param {object} key
+	 * @param {function?} callback
+	 */
+	removeLRU(key, callback) {
+		if (typeof callback === 'function') {
+			this.handle('removeLRU', key, null, callback);
+		}
+		return new Promise(resolve => {
+			this.handle('removeLRU', key, null, () => {
+				resolve();
+			});
+		});
+	}
 }
 
 module.exports = Worker;

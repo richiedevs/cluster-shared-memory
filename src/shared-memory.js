@@ -15,13 +15,13 @@ const Worker = require('./worker');
  * the shared memory to prevent memory overflow.
  */
 class SharedMemory {
-  constructor() {
-    if (cluster.isMaster || cluster.isPrimary) {
-      return new Manager();
-    } else {
-      return new Worker();
-    }
-  }
+	constructor() {
+		if (cluster.isMaster || cluster.isPrimary) {
+			return new Manager();
+		} else {
+			return new Worker();
+		}
+	}
 }
 
 const sharedMemoryController = new SharedMemory();

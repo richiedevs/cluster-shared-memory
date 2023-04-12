@@ -47,7 +47,7 @@ if (cluster.isMaster) {
       res.writeHead(200);
       res.end(`Note: this url will not count requestTimes.\n`);
     }
-  }).listen(port, hostIp, function () {
+  }).listen(port, hostIp, () => {
     const url = `http://${hostIp}:${port}${baseUrl}`;
     console.log(`Worker ${cluster.worker.id}(PID:${cluster.worker.process.pid}): HTTP server up! Visit ${url} to get started`);
 
